@@ -1,5 +1,14 @@
 Config = {}
 
+-- Webhook Discord
+Config.DiscordWebhook = {
+    enabled = true,
+    url = "IL_TUO_WEBHOOK_URL", -- Sostituisci con il tuo webhook URL
+    color = 16711680, -- Colore rosso per i log
+    botName = "Sistema Ban Armi",
+    botAvatar = "https://i.imgur.com/your_image.png" -- URL dell'immagine del bot
+}
+
 -- Lista delle armi bannate
 Config.BannedWeapons = {
     -- Pistole

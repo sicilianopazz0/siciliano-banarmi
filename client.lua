@@ -28,10 +28,10 @@ function DrawBanUI()
         return
     end
     
-    -- Disegna lo sfondo
+    -- Disegna lo sfondo con bordi arrotondati
     DrawRect(0.5, 0.95, 0.2, 0.05, 0, 0, 0, 200)
     
-    -- Disegna il testo
+    -- Disegna il testo con stile migliorato
     SetTextFont(4)
     SetTextScale(0.5, 0.5)
     SetTextColour(255, 255, 255, 255)
@@ -41,7 +41,9 @@ function DrawBanUI()
     SetTextOutline()
     SetTextEntry("STRING")
     SetTextCentre(true)
-    AddTextComponentString("~r~BAN ARMI~w~ - Tempo rimanente: " .. FormatTime(timeLeft))
+    
+    -- Aggiungi icona e testo
+    AddTextComponentString("~r~🔫 BAN ARMI ~w~| Tempo rimanente: " .. FormatTime(timeLeft))
     DrawText(0.5, 0.93)
 end
 
@@ -66,8 +68,20 @@ AddEventHandler("custom_menu:openBanMenu", function(target)
         align    = 'top-left',
         elements = elements
     }, function(data, menu)
-        TriggerServerEvent("custom_menu:setWeaponBan", target, data.current.value)
-        menu.close()
+        ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'ban_reason', {
+            title = 'Inserisci il motivo del ban'
+        }, function(data2, menu2)
+            local reason = data2.value
+            if reason == nil then
+                ESX.ShowNotification('Devi inserire un motivo!')
+            else
+                TriggerServerEvent("custom_menu:setWeaponBan", target, data.current.value, reason)
+                menu2.close()
+                menu.close()
+            end
+        end, function(data2, menu2)
+            menu2.close()
+        end)
     end, function(data, menu)
         menu.close()
     end)
@@ -86,6 +100,41 @@ AddEventHandler("custom_menu:unbanWeapons", function()
     showBanUI = false
 end)
 
+RegisterNetEvent("custom_menu:confirmExtendBan")
+AddEventHandler("custom_menu:confirmExtendBan", function(target, time, currentEndTime)
+    local elements = {
+        {label = "Sì, estendi il ban", value = "yes"},
+        {label = "No, annulla", value = "no"}
+    }
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'extend_ban_menu', {
+        title    = "Il giocatore è già bannato. Vuoi estendere il ban?",
+        align    = 'top-left',
+        elements = elements
+    }, function(data, menu)
+        if data.current.value == "yes" then
+            ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'extend_reason', {
+                title = 'Inserisci il motivo dell\'estensione'
+            }, function(data2, menu2)
+                local reason = data2.value
+                if reason == nil then
+                    ESX.ShowNotification('Devi inserire un motivo!')
+                else
+                    TriggerServerEvent("custom_menu:extendBan", target, time, reason)
+                    menu2.close()
+                    menu.close()
+                end
+            end, function(data2, menu2)
+                menu2.close()
+            end)
+        end
+        menu.close()
+    end, function(data, menu)
+        menu.close()
+    end)
+end)
+
+-- Aggiungi notifica quando si prova a usare un'arma vietata
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(500)
@@ -94,7 +143,7 @@ Citizen.CreateThread(function()
         for _, weapon in ipairs(bannedWeapons) do
             if HasPedGotWeapon(playerPed, GetHashKey(weapon), false) then
                 RemoveWeaponFromPed(playerPed, GetHashKey(weapon))
-                ESX.ShowNotification("Non puoi usare quest'arma al momento!")
+                ESX.ShowNotification("~r~ATTENZIONE~w~\nNon puoi usare quest'arma al momento!\nTempo rimanente: " .. FormatTime(banEndTime - (GetGameTimer() / 1000)))
             end
         end
     end
