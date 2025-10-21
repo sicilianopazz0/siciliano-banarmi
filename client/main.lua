@@ -86,8 +86,20 @@ AddEventHandler("custom_menu:openBanMenu", function(target)
         align    = 'top-left',
         elements = elements
     }, function(data, menu)
-        TriggerServerEvent("custom_menu:setWeaponBan", target, data.current.value)
-        menu.close()
+        ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'ban_reason', {
+            title = 'Inserisci il motivo del ban'
+        }, function(data2, menu2)
+            local reason = data2.value
+            if reason == nil then
+                ESX.ShowNotification('Devi inserire un motivo!')
+            else
+                TriggerServerEvent("custom_menu:setWeaponBan", target, data.current.value, reason)
+                menu2.close()
+                menu.close()
+            end
+        end, function(data2, menu2)
+            menu2.close()
+        end)
     end, function(data, menu)
         menu.close()
     end)
@@ -104,6 +116,40 @@ RegisterNetEvent("custom_menu:unbanWeapons")
 AddEventHandler("custom_menu:unbanWeapons", function()
     bannedWeapons = {}
     showBanUI = false
+end)
+
+RegisterNetEvent("custom_menu:confirmExtendBan")
+AddEventHandler("custom_menu:confirmExtendBan", function(target, time, currentEndTime)
+    local elements = {
+        {label = "Sì, estendi il ban", value = "yes"},
+        {label = "No, annulla", value = "no"}
+    }
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'extend_ban_menu', {
+        title    = "Il giocatore è già bannato. Vuoi estendere il ban?",
+        align    = 'top-left',
+        elements = elements
+    }, function(data, menu)
+        if data.current.value == "yes" then
+            ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'extend_reason', {
+                title = 'Inserisci il motivo dell\'estensione'
+            }, function(data2, menu2)
+                local reason = data2.value
+                if reason == nil then
+                    ESX.ShowNotification('Devi inserire un motivo!')
+                else
+                    TriggerServerEvent("custom_menu:extendBan", target, time, reason)
+                    menu2.close()
+                    menu.close()
+                end
+            end, function(data2, menu2)
+                menu2.close()
+            end)
+        end
+        menu.close()
+    end, function(data, menu)
+        menu.close()
+    end)
 end)
 
 -- Thread ottimizzato per il controllo delle armi
